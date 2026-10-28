@@ -7,8 +7,8 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.content.SharedPreferences;
 import android.net.Uri;
-import android.app.DownloadManager;
 import android.content.Intent;
+import android.app.DownloadManager;
 import android.os.Environment;
 import android.view.*;
 import android.view.inputmethod.EditorInfo;
@@ -24,13 +24,13 @@ import java.util.*;
 
 public class MainActivity extends Activity {
 
-    final int BG = Color.rgb(244, 248, 250);
-    final int INK = Color.rgb(25, 42, 52);
-    final int TEAL = Color.rgb(22, 125, 141);
-    final int MUTED = Color.rgb(98, 116, 126);
+    final int BG = Color.rgb(244,248,250);
+    final int INK = Color.rgb(25,42,52);
+    final int TEAL = Color.rgb(22,125,141);
+    final int MUTED = Color.rgb(98,116,126);
 
     final String[] engines = {
-        "Google", "Bing", "Brave Search", "DuckDuckGo"
+        "Google","Bing","Brave Search","DuckDuckGo"
     };
 
     final String[] bases = {
@@ -94,7 +94,6 @@ public class MainActivity extends Activity {
             Insets x = i.getInsets(
                 WindowInsetsCompat.Type.systemBars()
             );
-
             v.setPadding(x.left, x.top, x.right, x.bottom);
             return i;
         });
@@ -107,43 +106,39 @@ public class MainActivity extends Activity {
         LinearLayout brand = new LinearLayout(this);
         brand.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView logo = txt("⬡", 31, TEAL, true);
+        TextView logo = txt("⬡",31,TEAL,true);
         logo.setGravity(Gravity.CENTER);
 
         brand.addView(
             logo,
-            new LinearLayout.LayoutParams(dp(42), dp(42))
+            new LinearLayout.LayoutParams(dp(42),dp(42))
         );
 
         LinearLayout words = new LinearLayout(this);
         words.setOrientation(1);
-
-        words.addView(txt("NIRVA", 19, INK, true));
-        words.addView(
-            txt("Browse with more control", 11, MUTED, false)
-        );
+        words.addView(txt("NIRVA",19,INK,true));
+        words.addView(txt("Browse with more control",11,MUTED,false));
 
         LinearLayout.LayoutParams wp =
-            new LinearLayout.LayoutParams(0, -2, 1);
-
+            new LinearLayout.LayoutParams(0,-2,1);
         wp.leftMargin = dp(8);
-        brand.addView(words, wp);
+        brand.addView(words,wp);
 
         Button settings = btn("⚙");
         settings.setOnClickListener(v -> settings());
 
         brand.addView(
             settings,
-            new LinearLayout.LayoutParams(dp(45), dp(42))
+            new LinearLayout.LayoutParams(dp(45),dp(42))
         );
 
         toolbar.addView(brand);
 
         LinearLayout search = new LinearLayout(this);
         search.setGravity(Gravity.CENTER_VERTICAL);
-        search.setPadding(dp(8), dp(2), dp(3), dp(2));
+        search.setPadding(dp(8),dp(2),dp(3),dp(2));
         search.setBackground(
-            round(Color.WHITE, dp(15), 0xFFDCE7EB)
+            round(Color.WHITE,dp(15),0xFFDCE7EB)
         );
 
         address = new EditText(this);
@@ -152,11 +147,11 @@ public class MainActivity extends Activity {
         address.setTextColor(INK);
         address.setHintTextColor(MUTED);
         address.setHint("Search or enter website");
-        address.setPadding(dp(8), dp(8), dp(4), dp(8));
+        address.setPadding(dp(8),dp(8),dp(4),dp(8));
         address.setBackgroundColor(Color.TRANSPARENT);
         address.setImeOptions(EditorInfo.IME_ACTION_GO);
 
-        address.setOnEditorActionListener((v, a, e) -> {
+        address.setOnEditorActionListener((v,a,e) -> {
             if (a == EditorInfo.IME_ACTION_GO
                     || a == EditorInfo.IME_ACTION_DONE) {
                 navigate();
@@ -167,7 +162,7 @@ public class MainActivity extends Activity {
 
         search.addView(
             address,
-            new LinearLayout.LayoutParams(0, -2, 1)
+            new LinearLayout.LayoutParams(0,-2,1)
         );
 
         Button go = btn("Go");
@@ -175,26 +170,20 @@ public class MainActivity extends Activity {
 
         search.addView(
             go,
-            new LinearLayout.LayoutParams(dp(52), dp(42))
+            new LinearLayout.LayoutParams(dp(52),dp(42))
         );
 
         LinearLayout.LayoutParams sp =
-            new LinearLayout.LayoutParams(-1, -2);
-
+            new LinearLayout.LayoutParams(-1,-2);
         sp.topMargin = dp(8);
-        toolbar.addView(search, sp);
-
-        root.addView(
-            toolbar,
-            new LinearLayout.LayoutParams(-1, -2)
-        );
+        toolbar.addView(search,sp);
 
         LinearLayout tools = new LinearLayout(this);
         tools.setGravity(Gravity.CENTER);
-        tools.setPadding(dp(5), dp(2), dp(5), dp(5));
+        tools.setPadding(dp(5),dp(2),dp(5),dp(5));
 
         String[] toolNames = {
-            "↻", "Tabs", "Find", "Desktop", "Share", "Private"
+            "↻","Tabs","Find","Desktop","Share","Private"
         };
 
         for (int i = 0; i < toolNames.length; i++) {
@@ -205,10 +194,9 @@ public class MainActivity extends Activity {
             tb.setOnClickListener(v -> toolAction(n));
 
             LinearLayout.LayoutParams tp =
-                new LinearLayout.LayoutParams(0, dp(38), 1);
-
-            tp.setMargins(dp(2), 0, dp(2), 0);
-            tools.addView(tb, tp);
+                new LinearLayout.LayoutParams(0,dp(38),1);
+            tp.setMargins(dp(2),0,dp(2),0);
+            tools.addView(tb,tp);
         }
 
         toolbar.addView(tools);
@@ -218,17 +206,17 @@ public class MainActivity extends Activity {
 
         root.addView(
             body,
-            new LinearLayout.LayoutParams(-1, 0, 1)
+            new LinearLayout.LayoutParams(-1,0,1)
         );
 
         LinearLayout nav = new LinearLayout(this);
         nav.setGravity(Gravity.CENTER);
-        nav.setPadding(dp(6), dp(5), dp(6), dp(4));
+        nav.setPadding(dp(6),dp(5),dp(6),dp(4));
         nav.setBackgroundColor(Color.WHITE);
 
-        String[] labels = {"‹", "›", "⌂", "☆", "☷"};
+        String[] labels = {"‹","›","⌂","☆","☷"};
         String[] descriptions = {
-            "Back", "Forward", "Home", "Bookmark", "History"
+            "Back","Forward","Home","Bookmark","History"
         };
 
         for (int i = 0; i < labels.length; i++) {
@@ -240,15 +228,14 @@ public class MainActivity extends Activity {
             b.setOnClickListener(v -> navAction(n));
 
             LinearLayout.LayoutParams p =
-                new LinearLayout.LayoutParams(0, dp(43), 1);
-
-            p.setMargins(dp(3), 0, dp(3), 0);
-            nav.addView(b, p);
+                new LinearLayout.LayoutParams(0,dp(43),1);
+            p.setMargins(dp(3),0,dp(3),0);
+            nav.addView(b,p);
         }
 
         root.addView(
             nav,
-            new LinearLayout.LayoutParams(-1, -2)
+            new LinearLayout.LayoutParams(-1,-2)
         );
 
         setContentView(root);
@@ -259,7 +246,7 @@ public class MainActivity extends Activity {
         showingWeb = false;
 
         if (!tabUrls.isEmpty() && activeTab < tabUrls.size()) {
-            tabUrls.set(activeTab, "");
+            tabUrls.set(activeTab,"");
         }
 
         body.removeAllViews();
@@ -270,91 +257,81 @@ public class MainActivity extends Activity {
         LinearLayout h = new LinearLayout(this);
         h.setOrientation(1);
         h.setGravity(Gravity.CENTER_HORIZONTAL);
-        h.setPadding(dp(22), dp(22), dp(22), dp(20));
+        h.setPadding(dp(22),dp(22),dp(22),dp(20));
 
-        TextView logo = txt("⬡", 64, TEAL, true);
+        TextView logo = txt("⬡",64,TEAL,true);
         logo.setGravity(Gravity.CENTER);
 
         h.addView(
             logo,
-            new LinearLayout.LayoutParams(-1, dp(82))
+            new LinearLayout.LayoutParams(-1,dp(82))
         );
 
-        TextView title = txt("Nirva Browser", 27, INK, true);
+        TextView title = txt("Nirva Browser",27,INK,true);
         title.setGravity(Gravity.CENTER);
         h.addView(title);
 
         TextView sub = txt(
             "તમારી વેબ. તમારી પસંદગી. વધુ નિયંત્રણ.",
-            14, MUTED, false
+            14,MUTED,false
         );
-
         sub.setGravity(Gravity.CENTER);
 
         LinearLayout.LayoutParams p =
-            new LinearLayout.LayoutParams(-1, -2);
-
+            new LinearLayout.LayoutParams(-1,-2);
         p.topMargin = dp(6);
-        h.addView(sub, p);
+        h.addView(sub,p);
 
         Button choose = btn("Search with " + engine() + "  ▾");
         choose.setOnClickListener(v -> chooseEngine());
 
         LinearLayout.LayoutParams cp =
-            new LinearLayout.LayoutParams(-2, dp(46));
-
+            new LinearLayout.LayoutParams(-2,dp(46));
         cp.topMargin = dp(18);
-        h.addView(choose, cp);
+        h.addView(choose,cp);
 
         TextView privacy = txt(
-            "PRIVACY-FIRST CONTROLS", 11, MUTED, true
+            "PRIVACY-FIRST CONTROLS",11,MUTED,true
         );
-
         privacy.setGravity(Gravity.CENTER);
 
         LinearLayout.LayoutParams pp =
-            new LinearLayout.LayoutParams(-1, -2);
-
+            new LinearLayout.LayoutParams(-1,-2);
         pp.topMargin = dp(25);
         pp.bottomMargin = dp(10);
-        h.addView(privacy, pp);
+        h.addView(privacy,pp);
 
         h.addView(card(
-            "🔒",
-            "Privacy controls",
+            "🔒","Privacy controls",
             "Tracker blocking and data-clearing options",
             () -> settings()
         ));
 
         h.addView(card(
-            "☆",
-            "Your bookmarks",
+            "☆","Your bookmarks",
             "Open pages you saved",
-            () -> showList(BOOK, "Your bookmarks")
+            () -> showList(BOOK,"Your bookmarks")
         ));
 
         h.addView(card(
-            "◷",
-            "Recent history",
+            "◷","Recent history",
             "Review saved visits",
-            () -> showList(HIST, "Recent history")
+            () -> showList(HIST,"Recent history")
         ));
 
         TextView note = txt(
             "Early version: privacy protection is not absolute.",
-            11, MUTED, false
+            11,MUTED,false
         );
-
         note.setGravity(Gravity.CENTER);
 
         LinearLayout.LayoutParams np =
-            new LinearLayout.LayoutParams(-1, -2);
-
+            new LinearLayout.LayoutParams(-1,-2);
         np.topMargin = dp(15);
-        h.addView(note, np);
+        h.addView(note,np);
 
         sc.addView(h);
-        body.addView(sc, new LinearLayout.LayoutParams(-1, -1));
+        body.addView(sc,new LinearLayout.LayoutParams(-1,-1));
 
         address.setText("");
         address.setHint(
@@ -362,38 +339,36 @@ public class MainActivity extends Activity {
         );
     }
 
-    View card(String icon, String title, String desc, Runnable run) {
+    View card(String icon,String title,String desc,Runnable run) {
         LinearLayout c = new LinearLayout(this);
         c.setGravity(Gravity.CENTER_VERTICAL);
-        c.setPadding(dp(12), dp(10), dp(10), dp(10));
+        c.setPadding(dp(12),dp(10),dp(10),dp(10));
         c.setBackground(
-            round(Color.WHITE, dp(15), 0xFFE1EAED)
+            round(Color.WHITE,dp(15),0xFFE1EAED)
         );
 
-        TextView ic = txt(icon, 23, TEAL, true);
+        TextView ic = txt(icon,23,TEAL,true);
         ic.setGravity(Gravity.CENTER);
 
         c.addView(
             ic,
-            new LinearLayout.LayoutParams(dp(40), dp(42))
+            new LinearLayout.LayoutParams(dp(40),dp(42))
         );
 
         LinearLayout texts = new LinearLayout(this);
         texts.setOrientation(1);
-
-        texts.addView(txt(title, 15, INK, true));
-        texts.addView(txt(desc, 12, MUTED, false));
+        texts.addView(txt(title,15,INK,true));
+        texts.addView(txt(desc,12,MUTED,false));
 
         LinearLayout.LayoutParams tp =
-            new LinearLayout.LayoutParams(0, -2, 1);
-
+            new LinearLayout.LayoutParams(0,-2,1);
         tp.leftMargin = dp(8);
-        c.addView(texts, tp);
+        c.addView(texts,tp);
+
         c.setOnClickListener(v -> run.run());
 
         LinearLayout.LayoutParams p =
-            new LinearLayout.LayoutParams(-1, -2);
-
+            new LinearLayout.LayoutParams(-1,-2);
         p.bottomMargin = dp(8);
         c.setLayoutParams(p);
 
@@ -402,12 +377,11 @@ public class MainActivity extends Activity {
 
     void navigate() {
         String in = address.getText().toString().trim();
-
         if (in.isEmpty()) return;
 
-        ((InputMethodManager) getSystemService(
+        ((InputMethodManager)getSystemService(
             INPUT_METHOD_SERVICE
-        )).hideSoftInputFromWindow(address.getWindowToken(), 0);
+        )).hideSoftInputFromWindow(address.getWindowToken(),0);
 
         String low = in.toLowerCase(Locale.ROOT);
         String url;
@@ -417,10 +391,10 @@ public class MainActivity extends Activity {
         } else if (in.contains(" ") || !in.contains(".")) {
             try {
                 url = bases[engineIndex()]
-                    + URLEncoder.encode(in, "UTF-8");
+                    + URLEncoder.encode(in,"UTF-8");
             } catch (Exception e) {
                 url = bases[engineIndex()]
-                    + in.replace(" ", "+");
+                    + in.replace(" ","+");
             }
         } else {
             url = "https://" + in;
@@ -436,7 +410,7 @@ public class MainActivity extends Activity {
             tabUrls.add(url);
             activeTab = 0;
         } else if (activeTab < tabUrls.size()) {
-            tabUrls.set(activeTab, url);
+            tabUrls.set(activeTab,url);
         }
 
         showingWeb = true;
@@ -444,7 +418,7 @@ public class MainActivity extends Activity {
 
         detachWeb();
         body.removeAllViews();
-        body.addView(web, new LinearLayout.LayoutParams(-1, -1));
+        body.addView(web,new LinearLayout.LayoutParams(-1,-1));
 
         address.setText(url);
         web.loadUrl(url);
@@ -453,7 +427,7 @@ public class MainActivity extends Activity {
             save(
                 HIST,
                 System.currentTimeMillis() + "|"
-                    + url.replace("|", "%7C"),
+                    + url.replace("|","%7C"),
                 300
             );
         }
@@ -461,7 +435,7 @@ public class MainActivity extends Activity {
 
     void detachWeb() {
         if (web != null && web.getParent() != null) {
-            ((ViewGroup) web.getParent()).removeView(web);
+            ((ViewGroup)web.getParent()).removeView(web);
         }
     }
 
@@ -469,15 +443,14 @@ public class MainActivity extends Activity {
         web = new WebView(this);
 
         WebSettings s = web.getSettings();
-
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(!privateMode);
+        s.setMediaPlaybackRequiresUserGesture(false);
         s.setCacheMode(
             privateMode
                 ? WebSettings.LOAD_NO_CACHE
                 : WebSettings.LOAD_DEFAULT
         );
-
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(false);
         s.setSupportMultipleWindows(false);
@@ -489,7 +462,7 @@ public class MainActivity extends Activity {
 
         CookieManager.getInstance().setAcceptCookie(!privateMode);
         CookieManager.getInstance().setAcceptThirdPartyCookies(
-            web, false
+            web,false
         );
 
         web.setWebChromeClient(new WebChromeClient());
@@ -502,56 +475,58 @@ public class MainActivity extends Activity {
             );
         }
 
-        web.setDownloadListener((url, ua, cd, mime, len) -> {
-            try {
-                if (!url.startsWith("https://")
-                        && !url.startsWith("http://")) {
-                    return;
-                }
+        web.setDownloadListener((url,ua,cd,mime,len) -> {
+            downloadFile(url,ua,cd,mime);
+        });
 
-                DownloadManager.Request req =
-                    new DownloadManager.Request(Uri.parse(url));
+        // Long-press menu for images, media and direct file links.
+        web.setOnLongClickListener(v -> {
+            WebView.HitTestResult result = web.getHitTestResult();
 
-                String fn = URLUtil.guessFileName(url, cd, mime);
+            if (result == null) return false;
 
-                req.setTitle(fn);
-                req.setDescription("Nirva Browser download");
+            int type = result.getType();
+            String url = result.getExtra();
 
-                req.setNotificationVisibility(
-                    DownloadManager.Request
-                        .VISIBILITY_VISIBLE_NOTIFY_COMPLETED
-                );
+            boolean isMedia =
+                type == WebView.HitTestResult.SRC_IMAGE_TYPE
+                || type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE
+                || type == WebView.HitTestResult.SRC_ANCHOR_TYPE
+                || type == WebView.HitTestResult.SRC_VIDEO_TYPE
+                || type == WebView.HitTestResult.SRC_AUDIO_TYPE;
 
-                String ck = CookieManager.getInstance().getCookie(url);
-
-                if (ck != null) {
-                    req.addRequestHeader("Cookie", ck);
-                }
-
-                if (ua != null) {
-                    req.addRequestHeader("User-Agent", ua);
-                }
-
-                req.setDestinationInExternalPublicDir(
-                    Environment.DIRECTORY_DOWNLOADS, fn
-                );
-
-                DownloadManager dm = (DownloadManager)
-                    getSystemService(DOWNLOAD_SERVICE);
-
-                dm.enqueue(req);
-                toast("Download started");
-
-            } catch (Exception ex) {
-                toast("Download શરૂ ન થયું");
+            if (!isMedia || url == null || url.trim().isEmpty()) {
+                return false;
             }
+
+            final String fileUrl = url;
+
+            new AlertDialog.Builder(MainActivity.this)
+                .setTitle("Media / File options")
+                .setItems(
+                    new String[] {
+                        "Download file",
+                        "Open media",
+                        "Cancel"
+                    },
+                    (dialog,which) -> {
+                        if (which == 0) {
+                            downloadFile(fileUrl,null,null,null);
+                        } else if (which == 1) {
+                            open(fileUrl);
+                        }
+                    }
+                )
+                .show();
+
+            return true;
         });
 
         web.setWebViewClient(new WebViewClient() {
 
             @Override
             public boolean shouldOverrideUrlLoading(
-                    WebView v, WebResourceRequest r) {
+                    WebView v,WebResourceRequest r) {
 
                 String scheme = r.getUrl().getScheme();
 
@@ -570,7 +545,7 @@ public class MainActivity extends Activity {
 
             @Override
             public WebResourceResponse shouldInterceptRequest(
-                    WebView v, WebResourceRequest r) {
+                    WebView v,WebResourceRequest r) {
 
                 if (tracker(r.getUrl().getHost())) {
                     return new WebResourceResponse(
@@ -580,19 +555,91 @@ public class MainActivity extends Activity {
                     );
                 }
 
-                return super.shouldInterceptRequest(v, r);
+                return super.shouldInterceptRequest(v,r);
             }
 
             @Override
-            public void onPageFinished(WebView v, String u) {
+            public void onPageFinished(WebView v,String u) {
                 currentUrl = u;
                 address.setText(u);
 
                 if (!privateMode && activeTab < tabUrls.size()) {
-                    tabUrls.set(activeTab, u);
+                    tabUrls.set(activeTab,u);
                 }
             }
         });
+    }
+
+    // Download HTTP/HTTPS files using Android DownloadManager.
+    void downloadFile(
+            String url,
+            String userAgent,
+            String contentDisposition,
+            String mimeType) {
+
+        if (url == null || url.trim().isEmpty()) {
+            toast("ફાઇલની લિંક મળી નથી");
+            return;
+        }
+
+        if (!url.startsWith("https://")
+                && !url.startsWith("http://")) {
+            toast("આ પ્રકારની ફાઇલ સીધી ડાઉનલોડ કરી શકાતી નથી");
+            return;
+        }
+
+        try {
+            DownloadManager.Request request =
+                new DownloadManager.Request(Uri.parse(url));
+
+            String fileName = URLUtil.guessFileName(
+                url,contentDisposition,mimeType
+            );
+
+            request.setTitle(fileName);
+            request.setDescription("Nirva Browser download");
+
+            request.setNotificationVisibility(
+                DownloadManager.Request
+                    .VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+            );
+
+            if (mimeType != null && !mimeType.trim().isEmpty()) {
+                request.setMimeType(mimeType);
+            }
+
+            String cookies =
+                CookieManager.getInstance().getCookie(url);
+
+            if (cookies != null && !privateMode) {
+                request.addRequestHeader("Cookie",cookies);
+            }
+
+            if (userAgent != null && !userAgent.isEmpty()) {
+                request.addRequestHeader("User-Agent",userAgent);
+            }
+
+            request.setAllowedOverMetered(true);
+            request.setAllowedOverRoaming(false);
+
+            request.setDestinationInExternalPublicDir(
+                Environment.DIRECTORY_DOWNLOADS,fileName
+            );
+
+            DownloadManager manager = (DownloadManager)
+                getSystemService(DOWNLOAD_SERVICE);
+
+            if (manager == null) {
+                toast("Download Manager ઉપલબ્ધ નથી");
+                return;
+            }
+
+            manager.enqueue(request);
+            toast("ડાઉનલોડ શરૂ થયું: " + fileName);
+
+        } catch (Exception e) {
+            toast("ફાઇલ ડાઉનલોડ થઈ શકી નથી");
+        }
     }
 
     boolean tracker(String host) {
@@ -613,8 +660,7 @@ public class MainActivity extends Activity {
 
         for (String d : blocked) {
             if (host.equalsIgnoreCase(d)
-                    || host.toLowerCase(Locale.ROOT)
-                        .endsWith("." + d)) {
+                    || host.toLowerCase(Locale.ROOT).endsWith("." + d)) {
                 return true;
             }
         }
@@ -624,11 +670,8 @@ public class MainActivity extends Activity {
 
     void toolAction(int n) {
         if (n == 0) {
-            if (web != null && showingWeb) {
-                web.reload();
-            } else {
-                home();
-            }
+            if (web != null && showingWeb) web.reload();
+            else home();
 
         } else if (n == 1) {
             ArrayList<String> choices = new ArrayList<>();
@@ -636,8 +679,7 @@ public class MainActivity extends Activity {
             for (int i = 0; i < tabUrls.size(); i++) {
                 choices.add(
                     (i == activeTab ? "● " : "")
-                    + "Tab " + (i + 1)
-                    + " — " + tabUrls.get(i)
+                    + "Tab " + (i + 1) + " — " + tabUrls.get(i)
                 );
             }
 
@@ -646,8 +688,8 @@ public class MainActivity extends Activity {
             String[] items = choices.toArray(new String[0]);
 
             new AlertDialog.Builder(this)
-                .setTitle("Tabs (" + Math.max(1, tabUrls.size()) + ")")
-                .setItems(items, (d, which) -> {
+                .setTitle("Tabs (" + Math.max(1,tabUrls.size()) + ")")
+                .setItems(items,(d,which) -> {
                     if (!tabUrls.isEmpty()) {
                         activeTab = which;
 
@@ -661,15 +703,15 @@ public class MainActivity extends Activity {
                         home();
                     }
                 })
-                .setPositiveButton("+ New tab", (d, w) -> {
+                .setPositiveButton("+ New tab",(d,w) -> {
                     tabUrls.add("");
                     activeTab = tabUrls.size() - 1;
                     home();
                 })
-                .setNeutralButton("Close current", (d, w) -> {
+                .setNeutralButton("Close current",(d,w) -> {
                     if (!tabUrls.isEmpty()) {
                         tabUrls.remove(
-                            Math.min(activeTab, tabUrls.size() - 1)
+                            Math.min(activeTab,tabUrls.size()-1)
                         );
 
                         if (tabUrls.isEmpty()) {
@@ -677,8 +719,7 @@ public class MainActivity extends Activity {
                             home();
                         } else {
                             activeTab = Math.max(
-                                0,
-                                Math.min(activeTab, tabUrls.size() - 1)
+                                0,Math.min(activeTab,tabUrls.size()-1)
                             );
 
                             if (tabUrls.get(activeTab) == null
@@ -692,7 +733,7 @@ public class MainActivity extends Activity {
                         home();
                     }
                 })
-                .setNegativeButton("Done", null)
+                .setNegativeButton("Done",null)
                 .show();
 
         } else if (n == 2) {
@@ -708,7 +749,7 @@ public class MainActivity extends Activity {
             new AlertDialog.Builder(this)
                 .setTitle("Find in page")
                 .setView(q)
-                .setPositiveButton("Find", (d, w) -> {
+                .setPositiveButton("Find",(d,w) -> {
                     String query = q.getText().toString();
 
                     if (query.trim().isEmpty()) {
@@ -716,26 +757,20 @@ public class MainActivity extends Activity {
                         return;
                     }
 
-                    // FIX: WebView.FindListener requires THREE parameters.
-                    // Register the listener before starting the search.
                     web.setFindListener(
-                        (activeMatchOrdinal,
-                         numberOfMatches,
-                         isDoneCounting) -> {
-                            if (isDoneCounting) {
-                                if (numberOfMatches == 0) {
-                                    toast("શબ્દ મળ્યો નથી");
-                                }
+                        (activeMatchOrdinal,numberOfMatches,isDoneCounting) -> {
+                            if (isDoneCounting && numberOfMatches == 0) {
+                                toast("શબ્દ મળ્યો નથી");
                             }
                         }
                     );
 
                     web.findAllAsync(query);
                 })
-                .setNeutralButton("Next", (d, w) -> {
+                .setNeutralButton("Next",(d,w) -> {
                     if (web != null) web.findNext(true);
                 })
-                .setNegativeButton("Close", (d, w) -> {
+                .setNegativeButton("Close",(d,w) -> {
                     if (web != null) web.clearMatches();
                 })
                 .show();
@@ -747,7 +782,6 @@ public class MainActivity extends Activity {
                 String u = currentUrl;
                 detachWeb();
                 web = null;
-
                 if (!u.isEmpty()) open(u);
             }
 
@@ -761,10 +795,10 @@ public class MainActivity extends Activity {
 
             Intent share = new Intent(Intent.ACTION_SEND);
             share.setType("text/plain");
-            share.putExtra(Intent.EXTRA_TEXT, currentUrl);
+            share.putExtra(Intent.EXTRA_TEXT,currentUrl);
 
             startActivity(
-                Intent.createChooser(share, "Share page")
+                Intent.createChooser(share,"Share page")
             );
 
         } else if (n == 5) {
@@ -786,11 +820,8 @@ public class MainActivity extends Activity {
                 detachWeb();
                 web = null;
 
-                if (!u.isEmpty()) {
-                    open(u);
-                } else {
-                    home();
-                }
+                if (!u.isEmpty()) open(u);
+                else home();
             }
 
             toast("Private mode " + (privateMode ? "ON" : "OFF"));
@@ -800,19 +831,13 @@ public class MainActivity extends Activity {
     void navAction(int n) {
         switch (n) {
             case 0:
-                if (web != null && web.canGoBack()) {
-                    web.goBack();
-                } else {
-                    toast("પાછળ પેજ નથી");
-                }
+                if (web != null && web.canGoBack()) web.goBack();
+                else toast("પાછળ પેજ નથી");
                 break;
 
             case 1:
-                if (web != null && web.canGoForward()) {
-                    web.goForward();
-                } else {
-                    toast("આગળ પેજ નથી");
-                }
+                if (web != null && web.canGoForward()) web.goForward();
+                else toast("આગળ પેજ નથી");
                 break;
 
             case 2:
@@ -824,7 +849,7 @@ public class MainActivity extends Activity {
                 break;
 
             case 4:
-                showList(HIST, "Recent history");
+                showList(HIST,"Recent history");
                 break;
         }
     }
@@ -832,38 +857,32 @@ public class MainActivity extends Activity {
     void chooseEngine() {
         new AlertDialog.Builder(this)
             .setTitle("Choose search engine")
-            .setSingleChoiceItems(
-                engines,
-                engineIndex(),
-                (d, n) -> {
-                    prefs.edit().putString(ENGINE, engines[n]).apply();
-                    d.dismiss();
+            .setSingleChoiceItems(engines,engineIndex(),(d,n) -> {
+                prefs.edit().putString(ENGINE,engines[n]).apply();
+                d.dismiss();
 
-                    if (showingWeb) {
-                        address.setHint(
-                            "Search with " + engine()
-                            + " or enter website"
-                        );
-                    } else {
-                        home();
-                    }
-
-                    toast("Search engine: " + engine());
+                if (showingWeb) {
+                    address.setHint(
+                        "Search with " + engine() + " or enter website"
+                    );
+                } else {
+                    home();
                 }
-            )
-            .setNegativeButton("Cancel", null)
+
+                toast("Search engine: " + engine());
+            })
+            .setNegativeButton("Cancel",null)
             .show();
     }
 
     String engine() {
-        return prefs.getString(ENGINE, "Google");
+        return prefs.getString(ENGINE,"Google");
     }
 
     int engineIndex() {
         for (int i = 0; i < engines.length; i++) {
             if (engines[i].equals(engine())) return i;
         }
-
         return 0;
     }
 
@@ -871,7 +890,7 @@ public class MainActivity extends Activity {
         String[] opts = {
             "Search engine: " + engine(),
             "Auto-clear when app backgrounds: "
-                + (prefs.getBoolean(AUTO, true) ? "ON" : "OFF"),
+                + (prefs.getBoolean(AUTO,true) ? "ON" : "OFF"),
             "Clear browsing data",
             "Privacy information",
             "Open downloads",
@@ -881,15 +900,13 @@ public class MainActivity extends Activity {
 
         new AlertDialog.Builder(this)
             .setTitle("Nirva settings")
-            .setItems(opts, (d, n) -> {
+            .setItems(opts,(d,n) -> {
                 if (n == 0) {
                     chooseEngine();
 
                 } else if (n == 1) {
-                    boolean next = !prefs.getBoolean(AUTO, true);
-
-                    prefs.edit().putBoolean(AUTO, next).apply();
-
+                    boolean next = !prefs.getBoolean(AUTO,true);
+                    prefs.edit().putBoolean(AUTO,next).apply();
                     toast("Auto-clear " + (next ? "ON" : "OFF"));
                     settings();
 
@@ -918,25 +935,19 @@ public class MainActivity extends Activity {
                         .setTitle("Privacy information")
                         .setMessage(
                             "Nirva uses Android WebView and a limited "
-                            + "tracker-host blocklist. It has a launcher "
-                            + "icon, search engine selection, bookmarks, "
-                            + "history, downloads, desktop user-agent mode, "
-                            + "share, find-in-page, and a lightweight "
-                            + "URL-based tab switcher (pages are reloaded "
-                            + "when switched). Private mode is best-effort, "
-                            + "not equivalent to Chrome Incognito; Android "
-                            + "WebView and websites may still retain data. "
-                            + "No advertising or analytics SDK is included. "
-                            + "Search providers and visited websites receive "
-                            + "relevant data. This app is not security-audited "
-                            + "and cannot guarantee all tracking is blocked. "
-                            + "Force-stop may not trigger automatic cleanup."
+                            + "tracker-host blocklist. It includes bookmarks, "
+                            + "history, downloads, desktop mode, share, "
+                            + "find-in-page and URL-based tab switching. "
+                            + "Private mode is best-effort, not equivalent "
+                            + "to Chrome Incognito. This app is not "
+                            + "security-audited and cannot guarantee all "
+                            + "tracking is blocked."
                         )
-                        .setPositiveButton("OK", null)
+                        .setPositiveButton("OK",null)
                         .show();
                 }
             })
-            .setNegativeButton("Close", null)
+            .setNegativeButton("Close",null)
             .show();
     }
 
@@ -956,7 +967,7 @@ public class MainActivity extends Activity {
                 + "Cookies, cache and site storage are cleared "
                 + "together in Clear ALL."
             )
-            .setItems(opts, (d, n) -> {
+            .setItems(opts,(d,n) -> {
                 if (n == 4) {
                     new AlertDialog.Builder(this)
                         .setTitle("Clear all data?")
@@ -965,33 +976,29 @@ public class MainActivity extends Activity {
                             + "form data, site storage, saved history "
                             + "and bookmarks."
                         )
-                        .setNegativeButton("Cancel", null)
+                        .setNegativeButton("Cancel",null)
                         .setPositiveButton(
-                            "Clear all",
-                            (x, y) -> clearAll(true)
+                            "Clear all",(x,y) -> clearAll(true)
                         )
                         .show();
-
                 } else {
                     long days = n == 0 ? 1
                         : n == 1 ? 7
                         : n == 2 ? 30 : 365;
 
                     clearHistory(
-                        System.currentTimeMillis()
-                        - days * 86400000L
+                        System.currentTimeMillis() - days * 86400000L
                     );
 
                     toast("Selected history cleared");
                 }
             })
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton("Cancel",null)
             .show();
     }
 
     void clearAll(boolean notify) {
         if (clearing) return;
-
         clearing = true;
 
         try {
@@ -1005,23 +1012,14 @@ public class MainActivity extends Activity {
 
             CookieManager.getInstance().removeAllCookies(v -> {});
             CookieManager.getInstance().flush();
-
             WebStorage.getInstance().deleteAllData();
 
-            prefs.edit()
-                .remove(HIST)
-                .remove(BOOK)
-                .apply();
+            prefs.edit().remove(HIST).remove(BOOK).apply();
 
-            if (notify) {
-                toast("All browsing data cleared");
-            }
+            if (notify) toast("All browsing data cleared");
 
         } catch (Exception e) {
-            if (notify) {
-                toast("કેટલાક ડેટા સાફ ન થઈ શક્યા");
-            }
-
+            if (notify) toast("કેટલાક ડેટા સાફ ન થઈ શક્યા");
         } finally {
             clearing = false;
         }
@@ -1031,20 +1029,17 @@ public class MainActivity extends Activity {
         List<String> keep = new ArrayList<>();
 
         for (String row : lines(HIST)) {
-            String[] p = row.split("\\|", 2);
+            String[] p = row.split("\\|",2);
 
             try {
-                if (p.length == 2
-                        && Long.parseLong(p[0]) < before) {
+                if (p.length == 2 && Long.parseLong(p[0]) < before) {
                     keep.add(row);
                 }
             } catch (Exception ignored) {
             }
         }
 
-        prefs.edit()
-            .putString(HIST, String.join("\n", keep))
-            .apply();
+        prefs.edit().putString(HIST,String.join("\n",keep)).apply();
     }
 
     void bookmark() {
@@ -1055,54 +1050,40 @@ public class MainActivity extends Activity {
 
         List<String> b = lines(BOOK);
 
-        if (!b.contains(currentUrl)) {
-            b.add(currentUrl);
-        }
+        if (!b.contains(currentUrl)) b.add(currentUrl);
 
-        prefs.edit()
-            .putString(BOOK, String.join("\n", b))
-            .apply();
-
+        prefs.edit().putString(BOOK,String.join("\n",b)).apply();
         toast("Bookmark saved");
     }
 
-    void save(String key, String row, int max) {
+    void save(String key,String row,int max) {
         List<String> a = lines(key);
-
         a.add(row);
 
-        while (a.size() > max) {
-            a.remove(0);
-        }
+        while (a.size() > max) a.remove(0);
 
-        prefs.edit()
-            .putString(key, String.join("\n", a))
-            .apply();
+        prefs.edit().putString(key,String.join("\n",a)).apply();
     }
 
     List<String> lines(String key) {
-        String s = prefs.getString(key, "");
+        String s = prefs.getString(key,"");
 
         return s.isEmpty()
             ? new ArrayList<>()
             : new ArrayList<>(Arrays.asList(s.split("\n")));
     }
 
-    void showList(String key, String title) {
+    void showList(String key,String title) {
         List<String> a = lines(key);
         List<String> urls = new ArrayList<>();
 
         if (key.equals(HIST)) {
             for (String row : a) {
-                String[] p = row.split("\\|", 2);
-
-                if (p.length == 2) {
-                    urls.add(p[1]);
-                }
+                String[] p = row.split("\\|",2);
+                if (p.length == 2) urls.add(p[1]);
             }
 
             Collections.reverse(urls);
-
         } else {
             urls = a;
         }
@@ -1111,9 +1092,8 @@ public class MainActivity extends Activity {
             new AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMessage("Nothing saved yet.")
-                .setPositiveButton("OK", null)
+                .setPositiveButton("OK",null)
                 .show();
-
             return;
         }
 
@@ -1121,24 +1101,23 @@ public class MainActivity extends Activity {
 
         new AlertDialog.Builder(this)
             .setTitle(title)
-            .setItems(arr, (d, n) -> open(arr[n]))
-            .setNeutralButton("Clear list", (d, n) -> {
+            .setItems(arr,(d,n) -> open(arr[n]))
+            .setNeutralButton("Clear list",(d,n) -> {
                 prefs.edit().remove(key).apply();
                 toast("List cleared");
             })
-            .setNegativeButton("Close", null)
+            .setNegativeButton("Close",null)
             .show();
     }
 
-    TextView txt(String s, int size, int color, boolean bold) {
+    TextView txt(String s,int size,int color,boolean bold) {
         TextView t = new TextView(this);
-
         t.setText(s);
         t.setTextSize(size);
         t.setTextColor(color);
 
         if (bold) {
-            t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+            t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
         }
 
         return t;
@@ -1146,44 +1125,35 @@ public class MainActivity extends Activity {
 
     Button btn(String s) {
         Button b = new Button(this);
-
         b.setText(s);
         b.setTextColor(TEAL);
         b.setTextSize(15);
         b.setAllCaps(false);
         b.setMinWidth(0);
         b.setMinimumWidth(0);
-        b.setPadding(dp(4), 0, dp(4), 0);
-        b.setBackground(round(Color.WHITE, dp(13), 0xFFE1EAED));
-
+        b.setPadding(dp(4),0,dp(4),0);
+        b.setBackground(round(Color.WHITE,dp(13),0xFFE1EAED));
         return b;
     }
 
-    GradientDrawable round(int color, int radius, int stroke) {
+    GradientDrawable round(int color,int radius,int stroke) {
         GradientDrawable d = new GradientDrawable();
-
         d.setColor(color);
         d.setCornerRadius(radius);
 
-        if (stroke != 0) {
-            d.setStroke(dp(1), stroke);
-        }
+        if (stroke != 0) d.setStroke(dp(1),stroke);
 
         return d;
     }
 
     int dp(int n) {
-        return (int) (
+        return (int)(
             n * getResources().getDisplayMetrics().density + 0.5f
         );
     }
 
     void toast(String s) {
-        Toast.makeText(
-            this,
-            s,
-            Toast.LENGTH_SHORT
-        ).show();
+        Toast.makeText(this,s,Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -1199,14 +1169,10 @@ public class MainActivity extends Activity {
     protected void onStop() {
         super.onStop();
 
-        if (prefs != null
-                && prefs.getBoolean(AUTO, true)
-                && !clearing) {
+        if (prefs != null && prefs.getBoolean(AUTO,true) && !clearing) {
             clearAll(false);
 
-            if (web != null) {
-                web.loadUrl("about:blank");
-            }
+            if (web != null) web.loadUrl("about:blank");
 
             showingWeb = false;
         }
@@ -1216,12 +1182,11 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         if (web != null) {
             try {
-                if (prefs != null && prefs.getBoolean(AUTO, true)) {
+                if (prefs != null && prefs.getBoolean(AUTO,true)) {
                     clearAll(false);
                 }
 
                 web.destroy();
-
             } catch (Exception ignored) {
             }
 
