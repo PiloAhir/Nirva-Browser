@@ -1,1198 +1,831 @@
 package com.nirva.browser;
 
-import android.app.*;
-import android.os.Bundle;
-import android.graphics.Color;
-import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
-import android.content.SharedPreferences;
-import android.net.Uri;
-import android.content.Intent;
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.DownloadManager;
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
+import android.os.Bundle;
 import android.os.Environment;
-import android.view.*;
+import android.view.Gravity;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
-import android.webkit.*;
-import android.widget.*;
-import androidx.core.graphics.Insets;
-import androidx.core.view.*;
+import android.webkit.CookieManager;
+import android.webkit.DownloadListener;
+import android.webkit.URLUtil;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+import android.widget.Toast;
 
-import java.io.ByteArrayInputStream;
-import java.net.URLEncoder;
-import java.util.*;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends Activity {
 
-    final int BG = Color.rgb(244,248,250);
-    final int INK = Color.rgb(25,42,52);
-    final int TEAL = Color.rgb(22,125,141);
-    final int MUTED = Color.rgb(98,116,126);
+    private LinearLayout root;
+    private LinearLayout toolbar;
+    private EditText addressBar;
+    private ProgressBar progressBar;
+    private TextView statusText;
 
-    final String[] engines = {
-        "Google","Bing","Brave Search","DuckDuckGo"
+    private final List<WebView> tabs = new ArrayList<>();
+    private final List<String> bookmarks = new ArrayList<>();
+    private final List<String> history = new ArrayList<>();
+
+    private int currentTab = 0;
+    private boolean privateMode = false;
+    private boolean desktopMode = false;
+    private boolean darkMode = false;
+
+    private WebView web;
+
+    private final String HOME_URL = "https://www.google.com";
+
+    private final String[] trackerHosts = {
+            "doubleclick.net",
+            "google-analytics.com",
+            "googletagmanager.com",
+            "facebook.net",
+            "connect.facebook.net",
+            "adservice.google.com"
     };
-
-    final String[] bases = {
-        "https://www.google.com/search?q=",
-        "https://www.bing.com/search?q=",
-        "https://search.brave.com/search?q=",
-        "https://duckduckgo.com/?q="
-    };
-
-    final String HIST = "history";
-    final String BOOK = "bookmarks";
-    final String ENGINE = "engine";
-    final String AUTO = "autoClear";
-
-    SharedPreferences prefs;
-    LinearLayout root, toolbar, body;
-    EditText address;
-    WebView web;
-
-    boolean showingWeb = false;
-    boolean clearing = false;
-    boolean desktopMode = false;
-    boolean privateMode = false;
-
-    String currentUrl = "";
-
-    ArrayList<String> tabUrls = new ArrayList<>();
-    int activeTab = 0;
 
     @Override
-    public void onCreate(Bundle b) {
-        super.onCreate(b);
-
-        prefs = getSharedPreferences("nirva", MODE_PRIVATE);
-
-        setupBars();
-        buildUI();
-        home();
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        createBrowserUI();
+        addNewTab(HOME_URL);
     }
 
-    void setupBars() {
-        Window w = getWindow();
-
-        WindowCompat.setDecorFitsSystemWindows(w, false);
-        w.setStatusBarColor(Color.TRANSPARENT);
-        w.setNavigationBarColor(Color.TRANSPARENT);
-
-        WindowInsetsControllerCompat c =
-            new WindowInsetsControllerCompat(w, w.getDecorView());
-
-        c.setAppearanceLightStatusBars(true);
-        c.setAppearanceLightNavigationBars(true);
+    private int dp(float value) {
+        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
 
-    void buildUI() {
+    private Button makeButton(String text, Runnable action) {
+        Button button = new Button(this);
+        button.setText(text);
+        button.setTextSize(13);
+        button.setAllCaps(false);
+        button.setMinWidth(0);
+        button.setMinimumWidth(0);
+        button.setPadding(dp(6), 0, dp(6), 0);
+
+        button.setOnClickListener(v -> action.run());
+        return button;
+    }
+
+    private void createBrowserUI() {
         root = new LinearLayout(this);
-        root.setOrientation(1);
-        root.setBackgroundColor(BG);
-
-        ViewCompat.setOnApplyWindowInsetsListener(root, (v, i) -> {
-            Insets x = i.getInsets(
-                WindowInsetsCompat.Type.systemBars()
-            );
-            v.setPadding(x.left, x.top, x.right, x.bottom);
-            return i;
-        });
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(0xFFFFFFFF);
 
         toolbar = new LinearLayout(this);
-        toolbar.setOrientation(1);
-        toolbar.setPadding(dp(15), dp(8), dp(15), dp(8));
-        toolbar.setBackgroundColor(BG);
+        toolbar.setOrientation(LinearLayout.HORIZONTAL);
+        toolbar.setGravity(Gravity.CENTER_VERTICAL);
+        toolbar.setPadding(dp(4), dp(3), dp(4), dp(3));
+        toolbar.setBackgroundColor(0xFFF1F3F4);
 
-        LinearLayout brand = new LinearLayout(this);
-        brand.setGravity(Gravity.CENTER_VERTICAL);
+        addressBar = new EditText(this);
+        addressBar.setSingleLine(true);
+        addressBar.setTextSize(14);
+        addressBar.setHint("Search or enter website");
+        addressBar.setPadding(dp(10), 0, dp(8), 0);
+        addressBar.setSelectAllOnFocus(true);
+        addressBar.setImeOptions(EditorInfo.IME_ACTION_GO);
 
-        TextView logo = txt("⬡",31,TEAL,true);
-        logo.setGravity(Gravity.CENTER);
+        addressBar.setOnEditorActionListener((v, actionId, event) -> {
+            boolean enterPressed = event != null
+                    && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                    && event.getAction() == KeyEvent.ACTION_DOWN;
 
-        brand.addView(
-            logo,
-            new LinearLayout.LayoutParams(dp(42),dp(42))
-        );
-
-        LinearLayout words = new LinearLayout(this);
-        words.setOrientation(1);
-        words.addView(txt("NIRVA",19,INK,true));
-        words.addView(txt("Browse with more control",11,MUTED,false));
-
-        LinearLayout.LayoutParams wp =
-            new LinearLayout.LayoutParams(0,-2,1);
-        wp.leftMargin = dp(8);
-        brand.addView(words,wp);
-
-        Button settings = btn("⚙");
-        settings.setOnClickListener(v -> settings());
-
-        brand.addView(
-            settings,
-            new LinearLayout.LayoutParams(dp(45),dp(42))
-        );
-
-        toolbar.addView(brand);
-
-        LinearLayout search = new LinearLayout(this);
-        search.setGravity(Gravity.CENTER_VERTICAL);
-        search.setPadding(dp(8),dp(2),dp(3),dp(2));
-        search.setBackground(
-            round(Color.WHITE,dp(15),0xFFDCE7EB)
-        );
-
-        address = new EditText(this);
-        address.setSingleLine(true);
-        address.setTextSize(15);
-        address.setTextColor(INK);
-        address.setHintTextColor(MUTED);
-        address.setHint("Search or enter website");
-        address.setPadding(dp(8),dp(8),dp(4),dp(8));
-        address.setBackgroundColor(Color.TRANSPARENT);
-        address.setImeOptions(EditorInfo.IME_ACTION_GO);
-
-        address.setOnEditorActionListener((v,a,e) -> {
-            if (a == EditorInfo.IME_ACTION_GO
-                    || a == EditorInfo.IME_ACTION_DONE) {
-                navigate();
+            if (actionId == EditorInfo.IME_ACTION_GO || enterPressed) {
+                loadAddress(addressBar.getText().toString());
+                hideKeyboard();
                 return true;
             }
             return false;
         });
 
-        search.addView(
-            address,
-            new LinearLayout.LayoutParams(0,-2,1)
-        );
+        toolbar.addView(addressBar, new LinearLayout.LayoutParams(
+                0, dp(46), 1f));
 
-        Button go = btn("Go");
-        go.setOnClickListener(v -> navigate());
+        toolbar.addView(makeButton("Go", () ->
+                loadAddress(addressBar.getText().toString())));
 
-        search.addView(
-            go,
-            new LinearLayout.LayoutParams(dp(52),dp(42))
-        );
+        root.addView(toolbar);
 
-        LinearLayout.LayoutParams sp =
-            new LinearLayout.LayoutParams(-1,-2);
-        sp.topMargin = dp(8);
-        toolbar.addView(search,sp);
+        LinearLayout controls = new LinearLayout(this);
+        controls.setOrientation(LinearLayout.HORIZONTAL);
+        controls.setGravity(Gravity.CENTER_VERTICAL);
+        controls.setPadding(dp(2), 0, dp(2), 0);
 
-        LinearLayout tools = new LinearLayout(this);
-        tools.setGravity(Gravity.CENTER);
-        tools.setPadding(dp(5),dp(2),dp(5),dp(5));
+        controls.addView(makeButton("‹", () -> {
+            if (web != null && web.canGoBack()) web.goBack();
+        }));
 
-        String[] toolNames = {
-            "↻","Tabs","Find","Desktop","Share","Private"
-        };
+        controls.addView(makeButton("›", () -> {
+            if (web != null && web.canGoForward()) web.goForward();
+        }));
 
-        for (int i = 0; i < toolNames.length; i++) {
-            final int n = i;
+        controls.addView(makeButton("↻", () -> {
+            if (web != null) web.reload();
+        }));
 
-            Button tb = btn(toolNames[i]);
-            tb.setTextSize(12);
-            tb.setOnClickListener(v -> toolAction(n));
+        controls.addView(makeButton("Home", () -> loadAddress(HOME_URL)));
 
-            LinearLayout.LayoutParams tp =
-                new LinearLayout.LayoutParams(0,dp(38),1);
-            tp.setMargins(dp(2),0,dp(2),0);
-            tools.addView(tb,tp);
-        }
+        controls.addView(makeButton("＋ Tab", () -> addNewTab(HOME_URL)));
 
-        toolbar.addView(tools);
+        controls.addView(makeButton("Tabs", this::showTabs));
 
-        body = new LinearLayout(this);
-        body.setOrientation(1);
+        controls.addView(makeButton("Menu", this::showBrowserMenu));
 
-        root.addView(
-            body,
-            new LinearLayout.LayoutParams(-1,0,1)
-        );
+        root.addView(controls);
 
-        LinearLayout nav = new LinearLayout(this);
-        nav.setGravity(Gravity.CENTER);
-        nav.setPadding(dp(6),dp(5),dp(6),dp(4));
-        nav.setBackgroundColor(Color.WHITE);
+        progressBar = new ProgressBar(
+                this, null, android.R.attr.progressBarStyleHorizontal);
+        progressBar.setMax(100);
+        progressBar.setProgress(0);
+        root.addView(progressBar, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(3)));
 
-        String[] labels = {"‹","›","⌂","☆","☷"};
-        String[] descriptions = {
-            "Back","Forward","Home","Bookmark","History"
-        };
-
-        for (int i = 0; i < labels.length; i++) {
-            final int n = i;
-
-            Button b = btn(labels[i]);
-            b.setTextSize(i == 2 ? 22 : 20);
-            b.setContentDescription(descriptions[i]);
-            b.setOnClickListener(v -> navAction(n));
-
-            LinearLayout.LayoutParams p =
-                new LinearLayout.LayoutParams(0,dp(43),1);
-            p.setMargins(dp(3),0,dp(3),0);
-            nav.addView(b,p);
-        }
-
-        root.addView(
-            nav,
-            new LinearLayout.LayoutParams(-1,-2)
-        );
+        statusText = new TextView(this);
+        statusText.setTextSize(11);
+        statusText.setPadding(dp(7), dp(2), dp(7), dp(2));
+        statusText.setSingleLine(true);
+        statusText.setText("Nirva Browser");
+        root.addView(statusText);
 
         setContentView(root);
-        ViewCompat.requestApplyInsets(root);
     }
 
-    void home() {
-        showingWeb = false;
+    private WebView createWebView() {
+        WebView view = new WebView(this);
 
-        if (!tabUrls.isEmpty() && activeTab < tabUrls.size()) {
-            tabUrls.set(activeTab,"");
-        }
-
-        body.removeAllViews();
-        detachWeb();
-
-        ScrollView sc = new ScrollView(this);
-
-        LinearLayout h = new LinearLayout(this);
-        h.setOrientation(1);
-        h.setGravity(Gravity.CENTER_HORIZONTAL);
-        h.setPadding(dp(22),dp(22),dp(22),dp(20));
-
-        TextView logo = txt("⬡",64,TEAL,true);
-        logo.setGravity(Gravity.CENTER);
-
-        h.addView(
-            logo,
-            new LinearLayout.LayoutParams(-1,dp(82))
-        );
-
-        TextView title = txt("Nirva Browser",27,INK,true);
-        title.setGravity(Gravity.CENTER);
-        h.addView(title);
-
-        TextView sub = txt(
-            "તમારી વેબ. તમારી પસંદગી. વધુ નિયંત્રણ.",
-            14,MUTED,false
-        );
-        sub.setGravity(Gravity.CENTER);
-
-        LinearLayout.LayoutParams p =
-            new LinearLayout.LayoutParams(-1,-2);
-        p.topMargin = dp(6);
-        h.addView(sub,p);
-
-        Button choose = btn("Search with " + engine() + "  ▾");
-        choose.setOnClickListener(v -> chooseEngine());
-
-        LinearLayout.LayoutParams cp =
-            new LinearLayout.LayoutParams(-2,dp(46));
-        cp.topMargin = dp(18);
-        h.addView(choose,cp);
-
-        TextView privacy = txt(
-            "PRIVACY-FIRST CONTROLS",11,MUTED,true
-        );
-        privacy.setGravity(Gravity.CENTER);
-
-        LinearLayout.LayoutParams pp =
-            new LinearLayout.LayoutParams(-1,-2);
-        pp.topMargin = dp(25);
-        pp.bottomMargin = dp(10);
-        h.addView(privacy,pp);
-
-        h.addView(card(
-            "🔒","Privacy controls",
-            "Tracker blocking and data-clearing options",
-            () -> settings()
-        ));
-
-        h.addView(card(
-            "☆","Your bookmarks",
-            "Open pages you saved",
-            () -> showList(BOOK,"Your bookmarks")
-        ));
-
-        h.addView(card(
-            "◷","Recent history",
-            "Review saved visits",
-            () -> showList(HIST,"Recent history")
-        ));
-
-        TextView note = txt(
-            "Early version: privacy protection is not absolute.",
-            11,MUTED,false
-        );
-        note.setGravity(Gravity.CENTER);
-
-        LinearLayout.LayoutParams np =
-            new LinearLayout.LayoutParams(-1,-2);
-        np.topMargin = dp(15);
-        h.addView(note,np);
-
-        sc.addView(h);
-        body.addView(sc,new LinearLayout.LayoutParams(-1,-1));
-
-        address.setText("");
-        address.setHint(
-            "Search with " + engine() + " or enter website"
-        );
-    }
-
-    View card(String icon,String title,String desc,Runnable run) {
-        LinearLayout c = new LinearLayout(this);
-        c.setGravity(Gravity.CENTER_VERTICAL);
-        c.setPadding(dp(12),dp(10),dp(10),dp(10));
-        c.setBackground(
-            round(Color.WHITE,dp(15),0xFFE1EAED)
-        );
-
-        TextView ic = txt(icon,23,TEAL,true);
-        ic.setGravity(Gravity.CENTER);
-
-        c.addView(
-            ic,
-            new LinearLayout.LayoutParams(dp(40),dp(42))
-        );
-
-        LinearLayout texts = new LinearLayout(this);
-        texts.setOrientation(1);
-        texts.addView(txt(title,15,INK,true));
-        texts.addView(txt(desc,12,MUTED,false));
-
-        LinearLayout.LayoutParams tp =
-            new LinearLayout.LayoutParams(0,-2,1);
-        tp.leftMargin = dp(8);
-        c.addView(texts,tp);
-
-        c.setOnClickListener(v -> run.run());
-
-        LinearLayout.LayoutParams p =
-            new LinearLayout.LayoutParams(-1,-2);
-        p.bottomMargin = dp(8);
-        c.setLayoutParams(p);
-
-        return c;
-    }
-
-    void navigate() {
-        String in = address.getText().toString().trim();
-        if (in.isEmpty()) return;
-
-        ((InputMethodManager)getSystemService(
-            INPUT_METHOD_SERVICE
-        )).hideSoftInputFromWindow(address.getWindowToken(),0);
-
-        String low = in.toLowerCase(Locale.ROOT);
-        String url;
-
-        if (low.startsWith("https://") || low.startsWith("http://")) {
-            url = in;
-        } else if (in.contains(" ") || !in.contains(".")) {
-            try {
-                url = bases[engineIndex()]
-                    + URLEncoder.encode(in,"UTF-8");
-            } catch (Exception e) {
-                url = bases[engineIndex()]
-                    + in.replace(" ","+");
-            }
-        } else {
-            url = "https://" + in;
-        }
-
-        open(url);
-    }
-
-    void open(String url) {
-        if (web == null) createWeb();
-
-        if (tabUrls.isEmpty()) {
-            tabUrls.add(url);
-            activeTab = 0;
-        } else if (activeTab < tabUrls.size()) {
-            tabUrls.set(activeTab,url);
-        }
-
-        showingWeb = true;
-        currentUrl = url;
-
-        detachWeb();
-        body.removeAllViews();
-        body.addView(web,new LinearLayout.LayoutParams(-1,-1));
-
-        address.setText(url);
-        web.loadUrl(url);
-
-        if (!privateMode) {
-            save(
-                HIST,
-                System.currentTimeMillis() + "|"
-                    + url.replace("|","%7C"),
-                300
-            );
-        }
-    }
-
-    void detachWeb() {
-        if (web != null && web.getParent() != null) {
-            ((ViewGroup)web.getParent()).removeView(web);
-        }
-    }
-
-    void createWeb() {
-        web = new WebView(this);
-
-        WebSettings s = web.getSettings();
-        s.setJavaScriptEnabled(true);
-        s.setDomStorageEnabled(!privateMode);
-        s.setMediaPlaybackRequiresUserGesture(false);
-        s.setCacheMode(
-            privateMode
-                ? WebSettings.LOAD_NO_CACHE
-                : WebSettings.LOAD_DEFAULT
-        );
-        s.setAllowFileAccess(false);
-        s.setAllowContentAccess(false);
-        s.setSupportMultipleWindows(false);
-        s.setJavaScriptCanOpenWindowsAutomatically(false);
-        s.setMixedContentMode(
-            WebSettings.MIXED_CONTENT_NEVER_ALLOW
-        );
-        s.setSafeBrowsingEnabled(true);
-
-        CookieManager.getInstance().setAcceptCookie(!privateMode);
-        CookieManager.getInstance().setAcceptThirdPartyCookies(
-            web,false
-        );
-
-        web.setWebChromeClient(new WebChromeClient());
+        WebSettings settings = view.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setUseWideViewPort(true);
+        settings.setBuiltInZoomControls(true);
+        settings.setDisplayZoomControls(false);
+        settings.setMediaPlaybackRequiresUserGesture(false);
+        settings.setJavaScriptCanOpenWindowsAutomatically(true);
+        settings.setSupportMultipleWindows(false);
+        settings.setAllowFileAccess(false);
+        settings.setAllowContentAccess(true);
 
         if (desktopMode) {
-            s.setUserAgentString(
-                "Mozilla/5.0 (X11; Linux x86_64) "
-                + "AppleWebKit/537.36 (KHTML, like Gecko) "
-                + "Chrome/131.0.0.0 Safari/537.36"
-            );
+            settings.setUserAgentString(
+                    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                            + "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        } else {
+            settings.setUserAgentString(null);
         }
 
-        web.setDownloadListener((url,ua,cd,mime,len) -> {
-            downloadFile(url,ua,cd,mime);
+        view.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onProgressChanged(WebView view, int progress) {
+                progressBar.setProgress(progress);
+                progressBar.setVisibility(
+                        progress >= 100 ? View.GONE : View.VISIBLE);
+            }
+
+            @Override
+            public void onReceivedTitle(WebView view, String title) {
+                if (view == web && title != null) {
+                    statusText.setText(title);
+                }
+            }
         });
 
-        // Long-press menu for images, media and direct file links.
-        web.setOnLongClickListener(v -> {
-            WebView.HitTestResult result = web.getHitTestResult();
+        view.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(
+                    WebView view, WebResourceRequest request) {
+
+                Uri uri = request.getUrl();
+                String scheme = uri.getScheme();
+
+                if (scheme != null
+                        && !scheme.equalsIgnoreCase("http")
+                        && !scheme.equalsIgnoreCase("https")) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                        startActivity(intent);
+                    } catch (Exception ignored) {
+                        Toast.makeText(MainActivity.this,
+                                "આ લિંક ખોલી શકાતી નથી",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                    return true;
+                }
+
+                return false;
+            }
+
+            @Override
+            public void onPageStarted(
+                    WebView view, String url, Bitmap favicon) {
+                if (view == web) {
+                    addressBar.setText(url);
+                    statusText.setText("Loading...");
+                    progressBar.setVisibility(View.VISIBLE);
+                }
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                if (view == web) {
+                    addressBar.setText(url);
+                    statusText.setText(view.getTitle() == null
+                            ? url : view.getTitle());
+
+                    if (!privateMode && url != null
+                            && url.startsWith("http")) {
+                        if (!history.contains(url)) {
+                            history.add(url);
+                        }
+                    }
+                }
+            }
+        });
+
+        view.setDownloadListener(new DownloadListener() {
+            @Override
+            public void onDownloadStart(
+                    String url,
+                    String userAgent,
+                    String contentDisposition,
+                    String mimeType,
+                    long contentLength) {
+                downloadFile(url, userAgent, contentDisposition, mimeType);
+            }
+        });
+
+        view.setOnLongClickListener(v -> {
+            WebView.HitTestResult result = view.getHitTestResult();
 
             if (result == null) return false;
 
             int type = result.getType();
-            String url = result.getExtra();
+            String targetUrl = result.getExtra();
 
             boolean isMedia =
-                type == WebView.HitTestResult.SRC_IMAGE_TYPE
-                || type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE
-                || type == WebView.HitTestResult.SRC_ANCHOR_TYPE
-                || type == WebView.HitTestResult.SRC_VIDEO_TYPE
-                || type == WebView.HitTestResult.SRC_AUDIO_TYPE;
+                    type == WebView.HitTestResult.IMAGE_TYPE
+                    || type == WebView.HitTestResult.IMAGE_ANCHOR_TYPE
+                    || type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE
+                    || type == WebView.HitTestResult.SRC_ANCHOR_TYPE
+                    || type == WebView.HitTestResult.ANCHOR_TYPE
+                    || type == WebView.HitTestResult.VIDEO_TYPE;
 
-            if (!isMedia || url == null || url.trim().isEmpty()) {
-                return false;
-            }
-
-            final String fileUrl = url;
-
-            new AlertDialog.Builder(MainActivity.this)
-                .setTitle("Media / File options")
-                .setItems(
-                    new String[] {
-                        "Download file",
-                        "Open media",
-                        "Cancel"
-                    },
-                    (dialog,which) -> {
-                        if (which == 0) {
-                            downloadFile(fileUrl,null,null,null);
-                        } else if (which == 1) {
-                            open(fileUrl);
-                        }
-                    }
-                )
-                .show();
-
-            return true;
-        });
-
-        web.setWebViewClient(new WebViewClient() {
-
-            @Override
-            public boolean shouldOverrideUrlLoading(
-                    WebView v,WebResourceRequest r) {
-
-                String scheme = r.getUrl().getScheme();
-
-                if ("https".equals(scheme) || "http".equals(scheme)) {
-                    return false;
-                }
-
-                Toast.makeText(
-                    MainActivity.this,
-                    "આ લિંકનો પ્રકાર સપોર્ટેડ નથી",
-                    Toast.LENGTH_SHORT
-                ).show();
-
+            if (isMedia && targetUrl != null
+                    && !targetUrl.trim().isEmpty()) {
+                showMediaOptions(targetUrl);
                 return true;
             }
 
-            @Override
-            public WebResourceResponse shouldInterceptRequest(
-                    WebView v,WebResourceRequest r) {
-
-                if (tracker(r.getUrl().getHost())) {
-                    return new WebResourceResponse(
-                        "text/plain",
-                        "UTF-8",
-                        new ByteArrayInputStream(new byte[0])
-                    );
-                }
-
-                return super.shouldInterceptRequest(v,r);
-            }
-
-            @Override
-            public void onPageFinished(WebView v,String u) {
-                currentUrl = u;
-                address.setText(u);
-
-                if (!privateMode && activeTab < tabUrls.size()) {
-                    tabUrls.set(activeTab,u);
-                }
-            }
+            return false;
         });
+
+        return view;
     }
 
-    // Download HTTP/HTTPS files using Android DownloadManager.
-    void downloadFile(
+    private void addNewTab(String url) {
+        WebView newWeb = createWebView();
+
+        tabs.add(newWeb);
+        currentTab = tabs.size() - 1;
+
+        web = newWeb;
+
+        root.addView(web, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
+        web.setVisibility(View.VISIBLE);
+        addressBar.setText(url);
+
+        web.loadUrl(url);
+        updateTabStatus();
+    }
+
+    private void switchTab(int index) {
+        if (index < 0 || index >= tabs.size()) return;
+
+        if (web != null) {
+            web.setVisibility(View.GONE);
+        }
+
+        currentTab = index;
+        web = tabs.get(index);
+
+        if (web.getParent() != root) {
+            if (web.getParent() instanceof ViewGroup) {
+                ((ViewGroup) web.getParent()).removeView(web);
+            }
+            root.addView(web, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        }
+
+        web.setVisibility(View.VISIBLE);
+        addressBar.setText(web.getUrl() == null ? "" : web.getUrl());
+        updateTabStatus();
+    }
+
+    private void showTabs() {
+        if (tabs.isEmpty()) {
+            addNewTab(HOME_URL);
+            return;
+        }
+
+        String[] labels = new String[tabs.size() + 1];
+
+        for (int i = 0; i < tabs.size(); i++) {
+            WebView item = tabs.get(i);
+            String title = item.getTitle();
+
+            if (title == null || title.trim().isEmpty()) {
+                title = item.getUrl() == null ? "New tab" : item.getUrl();
+            }
+
+            labels[i] = (i == currentTab ? "✓ " : "") + title;
+        }
+
+        labels[tabs.size()] = "+ New tab";
+
+        new AlertDialog.Builder(this)
+                .setTitle("Tabs (" + tabs.size() + ")")
+                .setItems(labels, (dialog, which) -> {
+                    if (which == tabs.size()) {
+                        addNewTab(HOME_URL);
+                    } else {
+                        switchTab(which);
+                    }
+                })
+                .setNeutralButton("Close current tab", (dialog, which) ->
+                        closeCurrentTab())
+                .show();
+    }
+
+    private void closeCurrentTab() {
+        if (tabs.size() <= 1) {
+            if (web != null) web.loadUrl(HOME_URL);
+            return;
+        }
+
+        WebView old = tabs.remove(currentTab);
+        root.removeView(old);
+        old.stopLoading();
+        old.destroy();
+
+        currentTab = Math.max(0, currentTab - 1);
+        web = tabs.get(currentTab);
+        web.setVisibility(View.VISIBLE);
+        addressBar.setText(web.getUrl() == null ? "" : web.getUrl());
+
+        updateTabStatus();
+    }
+
+    private void updateTabStatus() {
+        statusText.setText("Nirva Browser • "
+                + (currentTab + 1) + "/" + tabs.size() + " tabs"
+                + (privateMode ? " • Private" : ""));
+    }
+
+    private void loadAddress(String input) {
+        if (input == null || input.trim().isEmpty()) return;
+
+        String text = input.trim();
+
+        if (text.matches("^[a-zA-Z][a-zA-Z0-9+.-]*://.*")) {
+            if (web != null) web.loadUrl(text);
+            return;
+        }
+
+        if (text.contains(" ") || !text.contains(".")) {
+            loadSearch(text);
+            return;
+        }
+
+        if (web != null) {
+            web.loadUrl("https://" + text);
+        }
+    }
+
+    private void loadSearch(String query) {
+        String encoded = Uri.encode(query);
+        if (web != null) {
+            web.loadUrl("https://www.google.com/search?q=" + encoded);
+        }
+    }
+
+    private void hideKeyboard() {
+        try {
+            InputMethodManager imm = (InputMethodManager)
+                    getSystemService(Context.INPUT_METHOD_SERVICE);
+
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(addressBar.getWindowToken(), 0);
+            }
+
+            addressBar.clearFocus();
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void showBrowserMenu() {
+        String[] options = {
+                "Bookmarks",
+                "History",
+                "Find on page",
+                "Share page",
+                "Download current page",
+                "Desktop mode: " + (desktopMode ? "ON" : "OFF"),
+                "Private mode: " + (privateMode ? "ON" : "OFF"),
+                "Dark theme: " + (darkMode ? "ON" : "OFF"),
+                "Clear browsing data",
+                "Settings / About"
+        };
+
+        new AlertDialog.Builder(this)
+                .setTitle("Nirva Browser Menu")
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            showBookmarks();
+                            break;
+                        case 1:
+                            showHistory();
+                            break;
+                        case 2:
+                            findOnPage();
+                            break;
+                        case 3:
+                            shareCurrentPage();
+                            break;
+                        case 4:
+                            if (web != null && web.getUrl() != null) {
+                                downloadFile(web.getUrl(), null,
+                                        null, "text/html");
+                            }
+                            break;
+                        case 5:
+                            desktopMode = !desktopMode;
+                            recreateCurrentPage();
+                            break;
+                        case 6:
+                            togglePrivateMode();
+                            break;
+                        case 7:
+                            darkMode = !darkMode;
+                            applyTheme();
+                            break;
+                        case 8:
+                            clearBrowsingData();
+                            break;
+                        case 9:
+                            showAbout();
+                            break;
+                    }
+                })
+                .setPositiveButton("Bookmark this page", (dialog, which) ->
+                        addBookmark())
+                .show();
+    }
+
+    private void showMediaOptions(String url) {
+        String[] options = {
+                "Download file",
+                "Open media",
+                "Copy link"
+        };
+
+        new AlertDialog.Builder(this)
+                .setTitle("Media options")
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            downloadFile(url, null, null, null);
+                            break;
+                        case 1:
+                            if (web != null) web.loadUrl(url);
+                            break;
+                        case 2:
+                            android.content.ClipboardManager clipboard =
+                                    (android.content.ClipboardManager)
+                                            getSystemService(CLIPBOARD_SERVICE);
+
+                            if (clipboard != null) {
+                                clipboard.setPrimaryClip(
+                                        android.content.ClipData.newPlainText(
+                                                "URL", url));
+                                Toast.makeText(this, "Link copied",
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                            break;
+                    }
+                })
+                .show();
+    }
+
+    private void downloadFile(
             String url,
             String userAgent,
             String contentDisposition,
             String mimeType) {
 
         if (url == null || url.trim().isEmpty()) {
-            toast("ફાઇલની લિંક મળી નથી");
-            return;
-        }
-
-        if (!url.startsWith("https://")
-                && !url.startsWith("http://")) {
-            toast("આ પ્રકારની ફાઇલ સીધી ડાઉનલોડ કરી શકાતી નથી");
+            Toast.makeText(this, "Download link not found",
+                    Toast.LENGTH_SHORT).show();
             return;
         }
 
         try {
+            Uri uri = Uri.parse(url);
+            String scheme = uri.getScheme();
+
+            if (scheme == null
+                    || (!scheme.equalsIgnoreCase("http")
+                    && !scheme.equalsIgnoreCase("https"))) {
+                Toast.makeText(this,
+                        "આ પ્રકારની ફાઇલ સીધી ડાઉનલોડ કરી શકાતી નથી",
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
+
             DownloadManager.Request request =
-                new DownloadManager.Request(Uri.parse(url));
+                    new DownloadManager.Request(uri);
 
             String fileName = URLUtil.guessFileName(
-                url,contentDisposition,mimeType
-            );
+                    url, contentDisposition, mimeType);
 
             request.setTitle(fileName);
-            request.setDescription("Nirva Browser download");
-
+            request.setDescription("Downloading with Nirva Browser");
             request.setNotificationVisibility(
-                DownloadManager.Request
-                    .VISIBILITY_VISIBLE_NOTIFY_COMPLETED
-            );
+                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setDestinationInExternalPublicDir(
+                    Environment.DIRECTORY_DOWNLOADS, fileName);
 
             if (mimeType != null && !mimeType.trim().isEmpty()) {
                 request.setMimeType(mimeType);
             }
 
-            String cookies =
-                CookieManager.getInstance().getCookie(url);
-
-            if (cookies != null && !privateMode) {
-                request.addRequestHeader("Cookie",cookies);
+            if (userAgent != null && !userAgent.trim().isEmpty()) {
+                request.addRequestHeader("User-Agent", userAgent);
+            } else if (web != null) {
+                request.addRequestHeader(
+                        "User-Agent", web.getSettings().getUserAgentString());
             }
 
-            if (userAgent != null && !userAgent.isEmpty()) {
-                request.addRequestHeader("User-Agent",userAgent);
+            if (!privateMode) {
+                String cookie = CookieManager.getInstance().getCookie(url);
+
+                if (cookie != null && !cookie.isEmpty()) {
+                    request.addRequestHeader("Cookie", cookie);
+                }
             }
 
             request.setAllowedOverMetered(true);
             request.setAllowedOverRoaming(false);
 
-            request.setDestinationInExternalPublicDir(
-                Environment.DIRECTORY_DOWNLOADS,fileName
-            );
-
-            DownloadManager manager = (DownloadManager)
-                getSystemService(DOWNLOAD_SERVICE);
+            DownloadManager manager =
+                    (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
 
             if (manager == null) {
-                toast("Download Manager ઉપલબ્ધ નથી");
+                Toast.makeText(this, "Download service unavailable",
+                        Toast.LENGTH_LONG).show();
                 return;
             }
 
             manager.enqueue(request);
-            toast("ડાઉનલોડ શરૂ થયું: " + fileName);
+
+            Toast.makeText(this,
+                    "Download શરૂ થયું: " + fileName,
+                    Toast.LENGTH_LONG).show();
 
         } catch (Exception e) {
-            toast("ફાઇલ ડાઉનલોડ થઈ શકી નથી");
+            Toast.makeText(this,
+                    "Download શરૂ થઈ શક્યું નથી",
+                    Toast.LENGTH_LONG).show();
         }
     }
 
-    boolean tracker(String host) {
-        if (host == null) return false;
+    private void addBookmark() {
+        if (web == null || web.getUrl() == null) return;
 
-        String[] blocked = {
-            "doubleclick.net",
-            "googlesyndication.com",
-            "google-analytics.com",
-            "googletagmanager.com",
-            "connect.facebook.net",
-            "scorecardresearch.com",
-            "hotjar.com",
-            "segment.io",
-            "ads-twitter.com",
-            "app-measurement.com"
-        };
+        String url = web.getUrl();
 
-        for (String d : blocked) {
-            if (host.equalsIgnoreCase(d)
-                    || host.toLowerCase(Locale.ROOT).endsWith("." + d)) {
-                return true;
-            }
+        if (!bookmarks.contains(url)) {
+            bookmarks.add(url);
         }
 
-        return false;
+        Toast.makeText(this, "Bookmark saved",
+                Toast.LENGTH_SHORT).show();
     }
 
-    void toolAction(int n) {
-        if (n == 0) {
-            if (web != null && showingWeb) web.reload();
-            else home();
-
-        } else if (n == 1) {
-            ArrayList<String> choices = new ArrayList<>();
-
-            for (int i = 0; i < tabUrls.size(); i++) {
-                choices.add(
-                    (i == activeTab ? "● " : "")
-                    + "Tab " + (i + 1) + " — " + tabUrls.get(i)
-                );
-            }
-
-            if (choices.isEmpty()) choices.add("Home");
-
-            String[] items = choices.toArray(new String[0]);
-
-            new AlertDialog.Builder(this)
-                .setTitle("Tabs (" + Math.max(1,tabUrls.size()) + ")")
-                .setItems(items,(d,which) -> {
-                    if (!tabUrls.isEmpty()) {
-                        activeTab = which;
-
-                        if (tabUrls.get(which) == null
-                                || tabUrls.get(which).isEmpty()) {
-                            home();
-                        } else {
-                            open(tabUrls.get(which));
-                        }
-                    } else {
-                        home();
-                    }
-                })
-                .setPositiveButton("+ New tab",(d,w) -> {
-                    tabUrls.add("");
-                    activeTab = tabUrls.size() - 1;
-                    home();
-                })
-                .setNeutralButton("Close current",(d,w) -> {
-                    if (!tabUrls.isEmpty()) {
-                        tabUrls.remove(
-                            Math.min(activeTab,tabUrls.size()-1)
-                        );
-
-                        if (tabUrls.isEmpty()) {
-                            activeTab = 0;
-                            home();
-                        } else {
-                            activeTab = Math.max(
-                                0,Math.min(activeTab,tabUrls.size()-1)
-                            );
-
-                            if (tabUrls.get(activeTab) == null
-                                    || tabUrls.get(activeTab).isEmpty()) {
-                                home();
-                            } else {
-                                open(tabUrls.get(activeTab));
-                            }
-                        }
-                    } else {
-                        home();
-                    }
-                })
-                .setNegativeButton("Done",null)
-                .show();
-
-        } else if (n == 2) {
-            if (web == null || !showingWeb) {
-                toast("પહેલાં વેબપેજ ખોલો");
-                return;
-            }
-
-            EditText q = new EditText(this);
-            q.setSingleLine(true);
-            q.setHint("Find text on page");
-
-            new AlertDialog.Builder(this)
-                .setTitle("Find in page")
-                .setView(q)
-                .setPositiveButton("Find",(d,w) -> {
-                    String query = q.getText().toString();
-
-                    if (query.trim().isEmpty()) {
-                        toast("શોધવા માટે શબ્દ લખો");
-                        return;
-                    }
-
-                    web.setFindListener(
-                        (activeMatchOrdinal,numberOfMatches,isDoneCounting) -> {
-                            if (isDoneCounting && numberOfMatches == 0) {
-                                toast("શબ્દ મળ્યો નથી");
-                            }
-                        }
-                    );
-
-                    web.findAllAsync(query);
-                })
-                .setNeutralButton("Next",(d,w) -> {
-                    if (web != null) web.findNext(true);
-                })
-                .setNegativeButton("Close",(d,w) -> {
-                    if (web != null) web.clearMatches();
-                })
-                .show();
-
-        } else if (n == 3) {
-            desktopMode = !desktopMode;
-
-            if (web != null) {
-                String u = currentUrl;
-                detachWeb();
-                web = null;
-                if (!u.isEmpty()) open(u);
-            }
-
-            toast("Desktop site " + (desktopMode ? "ON" : "OFF"));
-
-        } else if (n == 4) {
-            if (currentUrl.isEmpty()) {
-                toast("પહેલાં વેબસાઇટ ખોલો");
-                return;
-            }
-
-            Intent share = new Intent(Intent.ACTION_SEND);
-            share.setType("text/plain");
-            share.putExtra(Intent.EXTRA_TEXT,currentUrl);
-
-            startActivity(
-                Intent.createChooser(share,"Share page")
-            );
-
-        } else if (n == 5) {
-            privateMode = !privateMode;
-
-            if (privateMode) {
-                CookieManager.getInstance().removeAllCookies(v -> {});
-
-                if (web != null) {
-                    web.clearHistory();
-                    web.clearCache(true);
-                }
-            } else {
-                CookieManager.getInstance().setAcceptCookie(true);
-            }
-
-            if (web != null) {
-                String u = currentUrl;
-                detachWeb();
-                web = null;
-
-                if (!u.isEmpty()) open(u);
-                else home();
-            }
-
-            toast("Private mode " + (privateMode ? "ON" : "OFF"));
-        }
-    }
-
-    void navAction(int n) {
-        switch (n) {
-            case 0:
-                if (web != null && web.canGoBack()) web.goBack();
-                else toast("પાછળ પેજ નથી");
-                break;
-
-            case 1:
-                if (web != null && web.canGoForward()) web.goForward();
-                else toast("આગળ પેજ નથી");
-                break;
-
-            case 2:
-                home();
-                break;
-
-            case 3:
-                bookmark();
-                break;
-
-            case 4:
-                showList(HIST,"Recent history");
-                break;
-        }
-    }
-
-    void chooseEngine() {
-        new AlertDialog.Builder(this)
-            .setTitle("Choose search engine")
-            .setSingleChoiceItems(engines,engineIndex(),(d,n) -> {
-                prefs.edit().putString(ENGINE,engines[n]).apply();
-                d.dismiss();
-
-                if (showingWeb) {
-                    address.setHint(
-                        "Search with " + engine() + " or enter website"
-                    );
-                } else {
-                    home();
-                }
-
-                toast("Search engine: " + engine());
-            })
-            .setNegativeButton("Cancel",null)
-            .show();
-    }
-
-    String engine() {
-        return prefs.getString(ENGINE,"Google");
-    }
-
-    int engineIndex() {
-        for (int i = 0; i < engines.length; i++) {
-            if (engines[i].equals(engine())) return i;
-        }
-        return 0;
-    }
-
-    void settings() {
-        String[] opts = {
-            "Search engine: " + engine(),
-            "Auto-clear when app backgrounds: "
-                + (prefs.getBoolean(AUTO,true) ? "ON" : "OFF"),
-            "Clear browsing data",
-            "Privacy information",
-            "Open downloads",
-            "Desktop site: " + (desktopMode ? "ON" : "OFF"),
-            "Private mode: " + (privateMode ? "ON" : "OFF")
-        };
-
-        new AlertDialog.Builder(this)
-            .setTitle("Nirva settings")
-            .setItems(opts,(d,n) -> {
-                if (n == 0) {
-                    chooseEngine();
-
-                } else if (n == 1) {
-                    boolean next = !prefs.getBoolean(AUTO,true);
-                    prefs.edit().putBoolean(AUTO,next).apply();
-                    toast("Auto-clear " + (next ? "ON" : "OFF"));
-                    settings();
-
-                } else if (n == 2) {
-                    clearOptions();
-
-                } else if (n == 4) {
-                    Intent i = new Intent(
-                        DownloadManager.ACTION_VIEW_DOWNLOADS
-                    );
-
-                    try {
-                        startActivity(i);
-                    } catch (Exception ex) {
-                        toast("Downloads ખોલી શકાતું નથી");
-                    }
-
-                } else if (n == 5) {
-                    toolAction(3);
-
-                } else if (n == 6) {
-                    toolAction(5);
-
-                } else {
-                    new AlertDialog.Builder(this)
-                        .setTitle("Privacy information")
-                        .setMessage(
-                            "Nirva uses Android WebView and a limited "
-                            + "tracker-host blocklist. It includes bookmarks, "
-                            + "history, downloads, desktop mode, share, "
-                            + "find-in-page and URL-based tab switching. "
-                            + "Private mode is best-effort, not equivalent "
-                            + "to Chrome Incognito. This app is not "
-                            + "security-audited and cannot guarantee all "
-                            + "tracking is blocked."
-                        )
-                        .setPositiveButton("OK",null)
-                        .show();
-                }
-            })
-            .setNegativeButton("Close",null)
-            .show();
-    }
-
-    void clearOptions() {
-        String[] opts = {
-            "Last 24 hours (history only)",
-            "Last 1 week (history only)",
-            "Last 1 month (history only)",
-            "Last 1 year (history only)",
-            "Clear ALL browsing data"
-        };
-
-        new AlertDialog.Builder(this)
-            .setTitle("Clear browsing data")
-            .setMessage(
-                "Time ranges clear saved visit history only. "
-                + "Cookies, cache and site storage are cleared "
-                + "together in Clear ALL."
-            )
-            .setItems(opts,(d,n) -> {
-                if (n == 4) {
-                    new AlertDialog.Builder(this)
-                        .setTitle("Clear all data?")
-                        .setMessage(
-                            "This clears cookies, cache, WebView history, "
-                            + "form data, site storage, saved history "
-                            + "and bookmarks."
-                        )
-                        .setNegativeButton("Cancel",null)
-                        .setPositiveButton(
-                            "Clear all",(x,y) -> clearAll(true)
-                        )
-                        .show();
-                } else {
-                    long days = n == 0 ? 1
-                        : n == 1 ? 7
-                        : n == 2 ? 30 : 365;
-
-                    clearHistory(
-                        System.currentTimeMillis() - days * 86400000L
-                    );
-
-                    toast("Selected history cleared");
-                }
-            })
-            .setNegativeButton("Cancel",null)
-            .show();
-    }
-
-    void clearAll(boolean notify) {
-        if (clearing) return;
-        clearing = true;
-
-        try {
-            if (web != null) {
-                web.stopLoading();
-                web.clearHistory();
-                web.clearFormData();
-                web.clearCache(true);
-                web.clearSslPreferences();
-            }
-
-            CookieManager.getInstance().removeAllCookies(v -> {});
-            CookieManager.getInstance().flush();
-            WebStorage.getInstance().deleteAllData();
-
-            prefs.edit().remove(HIST).remove(BOOK).apply();
-
-            if (notify) toast("All browsing data cleared");
-
-        } catch (Exception e) {
-            if (notify) toast("કેટલાક ડેટા સાફ ન થઈ શક્યા");
-        } finally {
-            clearing = false;
-        }
-    }
-
-    void clearHistory(long before) {
-        List<String> keep = new ArrayList<>();
-
-        for (String row : lines(HIST)) {
-            String[] p = row.split("\\|",2);
-
-            try {
-                if (p.length == 2 && Long.parseLong(p[0]) < before) {
-                    keep.add(row);
-                }
-            } catch (Exception ignored) {
-            }
-        }
-
-        prefs.edit().putString(HIST,String.join("\n",keep)).apply();
-    }
-
-    void bookmark() {
-        if (!showingWeb || currentUrl.isEmpty()) {
-            toast("પહેલાં વેબસાઇટ ખોલો");
+    private void showBookmarks() {
+        if (bookmarks.isEmpty()) {
+            Toast.makeText(this, "No bookmarks saved",
+                    Toast.LENGTH_SHORT).show();
             return;
         }
 
-        List<String> b = lines(BOOK);
+        String[] items = bookmarks.toArray(new String[0]);
 
-        if (!b.contains(currentUrl)) b.add(currentUrl);
-
-        prefs.edit().putString(BOOK,String.join("\n",b)).apply();
-        toast("Bookmark saved");
+        new AlertDialog.Builder(this)
+                .setTitle("Bookmarks")
+                .setItems(items, (dialog, which) -> {
+                    if (web != null) web.loadUrl(items[which]);
+                })
+                .setNegativeButton("Close", null)
+                .show();
     }
 
-    void save(String key,String row,int max) {
-        List<String> a = lines(key);
-        a.add(row);
+    private void showHistory() {
+        if (history.isEmpty()) {
+            Toast.makeText(this, "No browsing history",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        while (a.size() > max) a.remove(0);
+        String[] items = history.toArray(new String[0]);
 
-        prefs.edit().putString(key,String.join("\n",a)).apply();
+        new AlertDialog.Builder(this)
+                .setTitle("History")
+                .setItems(items, (dialog, which) -> {
+                    if (web != null) web.loadUrl(items[which]);
+                })
+                .setNegativeButton("Close", null)
+                .show();
     }
 
-    List<String> lines(String key) {
-        String s = prefs.getString(key,"");
+    private void findOnPage() {
+        if (web == null) return;
 
-        return s.isEmpty()
-            ? new ArrayList<>()
-            : new ArrayList<>(Arrays.asList(s.split("\n")));
+        EditText searchBox = new EditText(this);
+        searchBox.setSingleLine(true);
+        searchBox.setHint("Find text");
+
+        new AlertDialog.Builder(this)
+                .setTitle("Find on page")
+                .setView(searchBox)
+                .setPositiveButton("Find", (dialog, which) -> {
+                    String query = searchBox.getText().toString();
+
+                    if (!query.isEmpty() && web != null) {
+                        web.findAllAsync(query);
+
+                        web.setFindListener((activeMatchOrdinal,
+                                              numberOfMatches,
+                                              isDoneCounting) -> {
+                            statusText.setText(
+                                    numberOfMatches + " matches found");
+                        });
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
-    void showList(String key,String title) {
-        List<String> a = lines(key);
-        List<String> urls = new ArrayList<>();
+    private void shareCurrentPage() {
+        if (web == null || web.getUrl() == null) return;
 
-        if (key.equals(HIST)) {
-            for (String row : a) {
-                String[] p = row.split("\\|",2);
-                if (p.length == 2) urls.add(p[1]);
-            }
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_TEXT, web.getUrl());
 
-            Collections.reverse(urls);
+        startActivity(Intent.createChooser(intent, "Share page"));
+    }
+
+    private void togglePrivateMode() {
+        privateMode = !privateMode;
+
+        CookieManager cookies = CookieManager.getInstance();
+        cookies.setAcceptCookie(!privateMode);
+
+        if (web != null) {
+            WebSettings settings = web.getSettings();
+            settings.setSaveFormData(!privateMode);
+            settings.setSavePassword(!privateMode);
+        }
+
+        updateTabStatus();
+
+        Toast.makeText(this,
+                privateMode
+                        ? "Private mode enabled"
+                        : "Private mode disabled",
+                Toast.LENGTH_SHORT).show();
+    }
+
+    private void recreateCurrentPage() {
+        if (web == null) return;
+
+        String url = web.getUrl();
+
+        WebSettings settings = web.getSettings();
+
+        if (desktopMode) {
+            settings.setUserAgentString(
+                    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                            + "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
         } else {
-            urls = a;
+            settings.setUserAgentString(null);
         }
 
-        if (urls.isEmpty()) {
-            new AlertDialog.Builder(this)
-                .setTitle(title)
-                .setMessage("Nothing saved yet.")
-                .setPositiveButton("OK",null)
-                .show();
-            return;
-        }
+        if (url != null) web.reload();
+    }
 
-        String[] arr = urls.toArray(new String[0]);
+    private void applyTheme() {
+        int background = darkMode ? 0xFF202124 : 0xFFFFFFFF;
+        int foreground = darkMode ? 0xFFFFFFFF : 0xFF202124;
 
+        root.setBackgroundColor(background);
+        toolbar.setBackgroundColor(darkMode
+                ? 0xFF303134 : 0xFFF1F3F4);
+
+        addressBar.setTextColor(foreground);
+        addressBar.setHintTextColor(darkMode
+                ? 0xFFBBBBBB : 0xFF666666);
+        statusText.setTextColor(foreground);
+
+        Toast.makeText(this,
+                darkMode ? "Dark theme enabled" : "Light theme enabled",
+                Toast.LENGTH_SHORT).show();
+    }
+
+    private void clearBrowsingData() {
         new AlertDialog.Builder(this)
-            .setTitle(title)
-            .setItems(arr,(d,n) -> open(arr[n]))
-            .setNeutralButton("Clear list",(d,n) -> {
-                prefs.edit().remove(key).apply();
-                toast("List cleared");
-            })
-            .setNegativeButton("Close",null)
-            .show();
+                .setTitle("Clear browsing data?")
+                .setMessage("આથી WebViewનું cache, history અને cookies સાફ થશે.")
+                .setPositiveButton("Clear", (dialog, which) -> {
+                    for (WebView item : tabs) {
+                        item.clearCache(true);
+                        item.clearHistory();
+                        item.clearFormData();
+                    }
+
+                    CookieManager.getInstance().removeAllCookies(null);
+                    CookieManager.getInstance().flush();
+
+                    history.clear();
+
+                    Toast.makeText(this, "Browsing data cleared",
+                            Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
-    TextView txt(String s,int size,int color,boolean bold) {
-        TextView t = new TextView(this);
-        t.setText(s);
-        t.setTextSize(size);
-        t.setTextColor(color);
-
-        if (bold) {
-            t.setTypeface(Typeface.DEFAULT,Typeface.BOLD);
-        }
-
-        return t;
-    }
-
-    Button btn(String s) {
-        Button b = new Button(this);
-        b.setText(s);
-        b.setTextColor(TEAL);
-        b.setTextSize(15);
-        b.setAllCaps(false);
-        b.setMinWidth(0);
-        b.setMinimumWidth(0);
-        b.setPadding(dp(4),0,dp(4),0);
-        b.setBackground(round(Color.WHITE,dp(13),0xFFE1EAED));
-        return b;
-    }
-
-    GradientDrawable round(int color,int radius,int stroke) {
-        GradientDrawable d = new GradientDrawable();
-        d.setColor(color);
-        d.setCornerRadius(radius);
-
-        if (stroke != 0) d.setStroke(dp(1),stroke);
-
-        return d;
-    }
-
-    int dp(int n) {
-        return (int)(
-            n * getResources().getDisplayMetrics().density + 0.5f
-        );
-    }
-
-    void toast(String s) {
-        Toast.makeText(this,s,Toast.LENGTH_SHORT).show();
+    private void showAbout() {
+        new AlertDialog.Builder(this)
+                .setTitle("Nirva Browser")
+                .setMessage(
+                        "Nirva Browser\n\n"
+                                + "Web browsing, tabs, bookmarks, history, "
+                                + "page search and downloads.\n\n"
+                                + "Media downloads depend on the website, "
+                                + "server permissions and available links.")
+                .setPositiveButton("OK", null)
+                .show();
     }
 
     @Override
     public void onBackPressed() {
-        if (showingWeb && web != null && web.canGoBack()) {
+        if (web != null && web.canGoBack()) {
             web.goBack();
+        } else if (tabs.size() > 1) {
+            closeCurrentTab();
         } else {
-            home();
-        }
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-
-        if (prefs != null && prefs.getBoolean(AUTO,true) && !clearing) {
-            clearAll(false);
-
-            if (web != null) web.loadUrl("about:blank");
-
-            showingWeb = false;
+            super.onBackPressed();
         }
     }
 
     @Override
     protected void onDestroy() {
-        if (web != null) {
+        for (WebView item : tabs) {
             try {
-                if (prefs != null && prefs.getBoolean(AUTO,true)) {
-                    clearAll(false);
-                }
-
-                web.destroy();
+                item.stopLoading();
+                item.destroy();
             } catch (Exception ignored) {
             }
-
-            web = null;
         }
 
+        tabs.clear();
         super.onDestroy();
     }
 }
