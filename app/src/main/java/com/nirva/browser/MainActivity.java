@@ -286,12 +286,11 @@ public class MainActivity extends Activity {
             String targetUrl = result.getExtra();
 
             boolean isMedia =
-                    type == WebView.HitTestResult.IMAGE_TYPE
-                    || type == WebView.HitTestResult.IMAGE_ANCHOR_TYPE
-                    || type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE
-                    || type == WebView.HitTestResult.SRC_ANCHOR_TYPE
-                    || type == WebView.HitTestResult.ANCHOR_TYPE
-                    || type == WebView.HitTestResult.VIDEO_TYPE;
+        type == WebView.HitTestResult.IMAGE_TYPE
+        || type == WebView.HitTestResult.IMAGE_ANCHOR_TYPE
+        || type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE
+        || type == WebView.HitTestResult.SRC_ANCHOR_TYPE
+        || type == WebView.HitTestResult.ANCHOR_TYPE;
 
             if (isMedia && targetUrl != null
                     && !targetUrl.trim().isEmpty()) {
